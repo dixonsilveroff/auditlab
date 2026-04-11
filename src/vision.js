@@ -39,7 +39,8 @@ export async function analyzeScreenshot(imagePath) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     const imageData = fs.readFileSync(imagePath);
     const base64Image = imageData.toString('base64');

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // audit.js — AuditLab CLI entry point
+import 'dotenv/config';
 import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import path from 'path';
