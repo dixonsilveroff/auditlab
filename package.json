@@ -1,0 +1,30 @@
+{
+  "name": "auditlab",
+  "version": "1.0.0",
+  "description": "Automated website audit tool — generates technical audit reports from a URL",
+  "type": "module",
+  "main": "audit.js",
+  "bin": {
+    "auditlab": "./audit.js"
+  },
+  "scripts": {
+    "start": "node audit.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "audit",
+    "website",
+    "lighthouse",
+    "seo",
+    "accessibility",
+    "performance"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "chrome-launcher": "^1.2.1",
+    "lighthouse": "^12.6.0",
+    "playwright": "^1.52.0",
+    "yargs": "^17.7.2"
+  }
+}
