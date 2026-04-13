@@ -13,6 +13,7 @@ import { runLighthouse } from './src/lighthouse.js';
 import { analyzeScreenshot } from './src/vision.js';
 import { aggregateIssues } from './src/aggregator.js';
 import { generateReport } from './src/report.js';
+import { generatePdf } from './src/pdf.js';
 
 // ── CLI Setup ────────────────────────────────────────────
 const argv = yargs(hideBin(process.argv))
@@ -65,7 +66,7 @@ async function main() {
   console.log('');
 
   // ── Step 1: Discover pages ──
-  console.log('━━━ Step 1/6: Discovering pages ━━━');
+  console.log('━━━ Step 1/7: Discovering pages ━━━');
   const pageUrls = await discoverPages(url, argv.pages);
   const pages = pageUrls.map((u) => ({
     name: getPageName(u, url),
@@ -76,7 +77,7 @@ async function main() {
   console.log('');
 
   // ── Step 2: Capture screenshots ──
-  console.log('━━━ Step 2/6: Capturing screenshots ━━━');
+  console.log('━━━ Step 2/7: Capturing screenshots ━━━');
   const { browser } = await launchBrowser();
   const screenshotPaths = {};
 
@@ -97,7 +98,7 @@ async function main() {
   console.log('');
 
   // ── Step 3: Run Lighthouse audits ──
-  console.log('━━━ Step 3/6: Running Lighthouse audits ━━━');
+  console.log('━━━ Step 3/7: Running Lighthouse audits ━━━');
   const lighthouseResults = {};
 
   for (const page of pages) {
@@ -115,7 +116,7 @@ async function main() {
   console.log('');
 
   // ── Step 4: Vision analysis ──
-  console.log('━━━ Step 4/6: Running vision analysis ━━━');
+  console.log('━━━ Step 4/7: Running vision analysis ━━━');
   const visionResults = {};
 
   for (const page of pages) {
@@ -140,13 +141,13 @@ async function main() {
   console.log('');
 
   // ── Step 5: Aggregate issues ──
-  console.log('━━━ Step 5/6: Aggregating issues ━━━');
+  console.log('━━━ Step 5/7: Aggregating issues ━━━');
   const allIssues = aggregateIssues(lighthouseResults, visionResults);
   console.log(`  Total issues: ${allIssues.length}`);
   console.log('');
 
   // ── Step 6: Generate report ──
-  console.log('━━━ Step 6/6: Generating report ━━━');
+  console.log('━━━ Step 6/7: Generating markdown report ━━━');
   const reportPath = generateReport(
     domain,
     url,
@@ -157,15 +158,20 @@ async function main() {
     outputDir
   );
 
+  // ── Step 7: Generate PDF ──
+  console.log('━━━ Step 7/7: Generating PDF report ━━━');
+  const pdfPath = await generatePdf(reportPath, outputDir);
+
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log('');
   console.log('╔══════════════════════════════════════════════════╗');
   console.log('║              ✅ Audit Complete!                  ║');
   console.log('╚══════════════════════════════════════════════════╝');
   console.log('');
-  console.log(`  Report:   ${reportPath}`);
-  console.log(`  Duration: ${elapsed}s`);
-  console.log(`  Issues:   ${allIssues.length} found`);
+  console.log(`  Report (MD):  ${reportPath}`);
+  console.log(`  Report (PDF): ${pdfPath}`);
+  console.log(`  Duration:     ${elapsed}s`);
+  console.log(`  Issues:       ${allIssues.length} found`);
   console.log('');
 }
 
