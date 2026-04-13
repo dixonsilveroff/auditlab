@@ -130,23 +130,6 @@ export function generateReport(
       lines.push('');
     }
 
-    // Screenshots
-    const screenshots = screenshotPaths[page.name];
-    if (screenshots) {
-      if (screenshots.desktop) {
-        const relPath = path.relative(outputDir, screenshots.desktop).replace(/\\/g, '/');
-        lines.push(`#### Desktop`);
-        lines.push(`![${page.name} - Desktop](${relPath})`);
-        lines.push('');
-      }
-      if (screenshots.mobile) {
-        const relPath = path.relative(outputDir, screenshots.mobile).replace(/\\/g, '/');
-        lines.push(`#### Mobile`);
-        lines.push(`![${page.name} - Mobile](${relPath})`);
-        lines.push('');
-      }
-    }
-
     // Page-specific issues
     const pageIssues = issues.filter((i) => i.page === page.name);
     if (pageIssues.length > 0) {

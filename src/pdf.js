@@ -1,6 +1,5 @@
 // src/pdf.js — PDF report generator (Markdown → HTML → PDF via Playwright)
 import fs from 'fs';
-import path from 'path';
 import MarkdownIt from 'markdown-it';
 import { chromium } from 'playwright';
 
@@ -8,27 +7,9 @@ const md = new MarkdownIt({ html: true, linkify: true, typographer: true });
 
 /**
  * Build a fully styled HTML document from the markdown report content.
- * Embeds screenshots as base64 data URIs so the PDF is fully self-contained.
  */
-function buildHtml(markdownContent, outputDir) {
-  // Convert relative image paths to base64 data URIs
-  const processedMarkdown = markdownContent.replace(
-    /!\[([^\]]*)\]\(([^)]+)\)/g,
-    (_match, alt, imgPath) => {
-      if (imgPath.startsWith('http')) return _match; // skip remote images
-
-      const absPath = path.resolve(outputDir, imgPath);
-      if (fs.existsSync(absPath)) {
-        const ext = path.extname(absPath).slice(1);
-        const mime = ext === 'jpg' ? 'jpeg' : ext;
-        const base64 = fs.readFileSync(absPath).toString('base64');
-        return `![${alt}](data:image/${mime};base64,${base64})`;
-      }
-      return _match;
-    }
-  );
-
-  const htmlBody = md.render(processedMarkdown);
+function buildHtml(markdownContent) {
+  const htmlBody = md.render(markdownContent);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -180,12 +161,11 @@ function buildHtml(markdownContent, outputDir) {
  * Generate a PDF from the markdown report file.
  *
  * @param {string} markdownPath - Path to the report.md file
- * @param {string} outputDir - Base output directory (for resolving image paths)
  * @returns {Promise<string>} Path to the generated PDF
  */
-export async function generatePdf(markdownPath, outputDir) {
+export async function generatePdf(markdownPath) {
   const markdownContent = fs.readFileSync(markdownPath, 'utf-8');
-  const html = buildHtml(markdownContent, outputDir);
+  const html = buildHtml(markdownContent);
 
   const pdfPath = markdownPath.replace(/\.md$/, '.pdf');
 

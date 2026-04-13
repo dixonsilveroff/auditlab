@@ -160,7 +160,7 @@ async function main() {
 
   // ── Step 7: Generate PDF ──
   console.log('━━━ Step 7/7: Generating PDF report ━━━');
-  const pdfPath = await generatePdf(reportPath, outputDir);
+  const pdfPath = await generatePdf(reportPath);
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log('');
