@@ -3,28 +3,47 @@ import fs from 'fs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const VALID_SEVERITIES = ['High', 'Medium', 'Low'];
+const VALID_CATEGORIES = ['ux', 'branding'];
 
 let _model = null;
 
-const VISION_PROMPT = `You are a senior UI/UX auditor. Analyze this website screenshot and identify issues.
+const VISION_PROMPT = `You are a senior UI/UX and brand strategy auditor. Analyze this website screenshot.
 
-For each issue found, return a JSON array of objects with these fields:
-- "issue": concise description of the problem
-- "severity": one of "High", "Medium", or "Low"
-  - High: blocks usability or is a critical accessibility issue
-  - Medium: degrades user experience noticeably
-  - Low: cosmetic or minor improvement
-- "recommendation": specific, actionable fix
+STEP 1 — INFER CONTEXT:
+From the visual design, content, and imagery, infer:
+- What business/industry this website represents
+- Who the target customer likely is (demographics, goals, pain points)
+- The intended brand personality and tone
 
-Focus on:
+STEP 2 — AUDIT:
+Identify issues in TWO categories:
+
+A) UX Issues (tag category as "ux"):
 1. Layout issues (broken layouts, overlapping elements, excessive whitespace)
 2. Readability problems (poor contrast, tiny text, missing hierarchy)
 3. CTA issues (missing calls-to-action, unclear buttons, poor placement)
 4. Mobile responsiveness issues (if applicable)
 5. Accessibility concerns (missing alt text indicators, poor color contrast)
 
+B) Branding & Targeting Issues (tag category as "branding"):
+1. Does the visual design effectively communicate the brand personality?
+2. Does the colour scheme, imagery, and typography suit the industry?
+3. Is the messaging and tone appropriate for the target customer?
+4. Are there trust signals that address likely customer concerns?
+5. Does the content speak to the target customer's goals and pain points?
+6. Is the overall impression professional and credible for this industry?
+
+For each issue found, return a JSON array of objects with these fields:
+- "category": one of "ux" or "branding"
+- "issue": concise description of the problem
+- "severity": one of "High", "Medium", or "Low"
+  - High: blocks usability, trust, or is a critical accessibility/branding failure
+  - Medium: degrades user experience or brand perception noticeably
+  - Low: cosmetic or minor improvement
+- "recommendation": specific, actionable fix
+
 Return ONLY a valid JSON array. No markdown, no explanation, just the JSON.
-Example: [{"issue":"...", "severity":"...", "recommendation":"..."}]
+Example: [{"category":"ux","issue":"...","severity":"...","recommendation":"..."}]
 If there are no issues, return an empty array: []`;
 
 /**
@@ -85,10 +104,14 @@ export async function analyzeScreenshot(imagePath) {
       if (typeof i.recommendation !== 'string' || !i.recommendation.trim()) return false;
       if (!VALID_SEVERITIES.includes(i.severity)) {
         if (typeof i.severity === 'string') {
-          i.severity = 'Medium'; // fallback for unexpected severity values
+          i.severity = 'Medium';
         } else {
           return false;
         }
+      }
+      // Normalize category (default to 'ux' if missing or invalid)
+      if (!VALID_CATEGORIES.includes(i.category)) {
+        i.category = 'ux';
       }
       return true;
     });

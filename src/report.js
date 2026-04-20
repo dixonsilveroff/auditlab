@@ -64,12 +64,16 @@ export function generateReport(
   lines.push('## 📋 Executive Summary');
   lines.push('');
 
+  const uxIssues = issues.filter((i) => i.category !== 'branding');
+  const brandingIssues = issues.filter((i) => i.category === 'branding');
   const highCount = issues.filter((i) => i.severity === 'High').length;
   const medCount = issues.filter((i) => i.severity === 'Medium').length;
   const lowCount = issues.filter((i) => i.severity === 'Low').length;
 
-  lines.push(`| Severity | Count |`);
+  lines.push(`| Category | Count |`);
   lines.push(`|----------|-------|`);
+  lines.push(`| ⚠️ UX Issues | ${uxIssues.length} |`);
+  lines.push(`| 🎨 Branding & Targeting | ${brandingIssues.length} |`);
   lines.push(`| 🔴 High | ${highCount} |`);
   lines.push(`| 🟡 Medium | ${medCount} |`);
   lines.push(`| 🟢 Low | ${lowCount} |`);
@@ -94,12 +98,27 @@ export function generateReport(
   }
   lines.push('');
 
-  // ── Key Issues ──
-  if (issues.length > 0) {
-    lines.push('## ⚠️ Key Issues');
+  // ── UX Issues ──
+  if (uxIssues.length > 0) {
+    lines.push('## ⚠️ UX Issues');
     lines.push('');
 
-    for (const issue of issues) {
+    for (const issue of uxIssues) {
+      lines.push(`### ${severityBadge(issue.severity)} — ${issue.issue}`);
+      lines.push('');
+      lines.push(`- **Page:** ${issue.page}`);
+      lines.push(`- **Source:** ${issue.source}`);
+      lines.push(`- **Recommendation:** ${issue.recommendation}`);
+      lines.push('');
+    }
+  }
+
+  // ── Branding & Targeting Issues ──
+  if (brandingIssues.length > 0) {
+    lines.push('## 🎨 Branding & Targeting');
+    lines.push('');
+
+    for (const issue of brandingIssues) {
       lines.push(`### ${severityBadge(issue.severity)} — ${issue.issue}`);
       lines.push('');
       lines.push(`- **Page:** ${issue.page}`);

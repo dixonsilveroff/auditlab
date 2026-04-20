@@ -4,7 +4,7 @@
  * Convert Lighthouse scores into structured issues.
  * @param {{ performance: number, accessibility: number, seo: number } | null} scores
  * @param {string} pageName
- * @returns {Array<{issue: string, severity: string, recommendation: string, source: string, page: string}>}
+ * @returns {Array<{issue: string, severity: string, recommendation: string, source: string, page: string, category: string}>}
  */
 function lighthouseToIssues(scores, pageName) {
   if (!scores) return [];
@@ -18,6 +18,7 @@ function lighthouseToIssues(scores, pageName) {
       recommendation: 'Optimize images, reduce JavaScript bundle size, enable caching, and minimize render-blocking resources.',
       source: 'lighthouse',
       page: pageName,
+      category: 'ux',
     });
   } else if (scores.performance < 80) {
     issues.push({
@@ -26,6 +27,7 @@ function lighthouseToIssues(scores, pageName) {
       recommendation: 'Consider lazy-loading images, optimizing web fonts, and reviewing third-party scripts.',
       source: 'lighthouse',
       page: pageName,
+      category: 'ux',
     });
   }
 
@@ -36,6 +38,7 @@ function lighthouseToIssues(scores, pageName) {
       recommendation: 'Add missing ARIA labels, ensure sufficient color contrast, and provide alt text for images.',
       source: 'lighthouse',
       page: pageName,
+      category: 'ux',
     });
   } else if (scores.accessibility < 80) {
     issues.push({
@@ -44,6 +47,7 @@ function lighthouseToIssues(scores, pageName) {
       recommendation: 'Review color contrast ratios, add missing form labels, and improve keyboard navigation.',
       source: 'lighthouse',
       page: pageName,
+      category: 'ux',
     });
   }
 
@@ -54,6 +58,7 @@ function lighthouseToIssues(scores, pageName) {
       recommendation: 'Add meta descriptions, ensure proper heading hierarchy, and fix crawlability issues.',
       source: 'lighthouse',
       page: pageName,
+      category: 'ux',
     });
   } else if (scores.seo < 80) {
     issues.push({
@@ -62,6 +67,7 @@ function lighthouseToIssues(scores, pageName) {
       recommendation: 'Improve meta tags, add structured data, and verify mobile-friendliness.',
       source: 'lighthouse',
       page: pageName,
+      category: 'ux',
     });
   }
 
@@ -89,7 +95,7 @@ function isSimilar(a, b) {
  *
  * @param {Object} lighthouseResults - Map of pageName -> scores
  * @param {Object} visionResults - Map of pageName -> Issue[]
- * @returns {Array<{issue: string, severity: string, recommendation: string, source: string, page: string}>}
+ * @returns {Array<{issue: string, severity: string, recommendation: string, source: string, page: string, category: string}>}
  */
 export function aggregateIssues(lighthouseResults, visionResults) {
   const allIssues = [];
