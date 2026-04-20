@@ -65,9 +65,12 @@ async function main() {
   console.log(`  Pages:   up to ${argv.pages}`);
   console.log('');
 
+  // ── Launch shared browser ──
+  const { browser } = await launchBrowser();
+
   // ── Step 1: Discover pages ──
   console.log('━━━ Step 1/7: Discovering pages ━━━');
-  const pageUrls = await discoverPages(url, argv.pages);
+  const pageUrls = await discoverPages(url, argv.pages, browser);
   const pages = pageUrls.map((u) => ({
     name: getPageName(u, url),
     url: u,
@@ -76,25 +79,24 @@ async function main() {
   pages.forEach((p) => console.log(`    → ${p.name}: ${p.url}`));
   console.log('');
 
-  // ── Step 2: Capture screenshots ──
+  // ── Step 2: Capture screenshots (parallel) ──
   console.log('━━━ Step 2/7: Capturing screenshots ━━━');
-  const { browser } = await launchBrowser();
   const screenshotPaths = {};
 
-  for (const page of pages) {
-    try {
-      screenshotPaths[page.name] = await captureScreenshots(
-        browser,
-        page.url,
-        page.name,
-        outputDir
-      );
-    } catch (error) {
-      console.error(`  ✗ Failed to screenshot ${page.name}: ${error.message}`);
-      screenshotPaths[page.name] = { desktop: null, mobile: null };
+  const screenshotResults = await Promise.allSettled(
+    pages.map((page) =>
+      captureScreenshots(browser, page.url, page.name, outputDir)
+    )
+  );
+  for (let i = 0; i < pages.length; i++) {
+    const result = screenshotResults[i];
+    if (result.status === 'fulfilled') {
+      screenshotPaths[pages[i].name] = result.value;
+    } else {
+      console.error(`  ✗ Failed to screenshot ${pages[i].name}: ${result.reason?.message}`);
+      screenshotPaths[pages[i].name] = { desktop: null, mobile: null };
     }
   }
-  await closeBrowser(browser);
   console.log('');
 
   // ── Step 3: Run Lighthouse audits ──
@@ -115,28 +117,29 @@ async function main() {
   }
   console.log('');
 
-  // ── Step 4: Vision analysis ──
+  // ── Step 4: Vision analysis (parallel) ──
   console.log('━━━ Step 4/7: Running vision analysis ━━━');
   const visionResults = {};
 
-  for (const page of pages) {
+  const visionTasks = pages.map(async (page) => {
     const screenshots = screenshotPaths[page.name];
     const pageIssues = [];
 
-    // Analyze desktop screenshot
     if (screenshots?.desktop) {
       const issues = await analyzeScreenshot(screenshots.desktop);
       pageIssues.push(...issues);
     }
 
-    // Analyze mobile screenshot (limit API calls by only doing desktop for now)
-    // Mobile analysis can be enabled by uncommenting below:
-    // if (screenshots?.mobile) {
-    //   const issues = await analyzeScreenshot(screenshots.mobile);
-    //   pageIssues.push(...issues);
-    // }
+    return { name: page.name, issues: pageIssues };
+  });
 
-    visionResults[page.name] = pageIssues;
+  const visionSettled = await Promise.allSettled(visionTasks);
+  for (const result of visionSettled) {
+    if (result.status === 'fulfilled') {
+      visionResults[result.value.name] = result.value.issues;
+    } else {
+      console.error(`  ✗ Vision analysis failed: ${result.reason?.message}`);
+    }
   }
   console.log('');
 
@@ -153,14 +156,16 @@ async function main() {
     url,
     pages,
     lighthouseResults,
-    screenshotPaths,
     allIssues,
     outputDir
   );
 
   // ── Step 7: Generate PDF ──
   console.log('━━━ Step 7/7: Generating PDF report ━━━');
-  const pdfPath = await generatePdf(reportPath);
+  const pdfPath = await generatePdf(reportPath, browser);
+
+  // ── Cleanup ──
+  await closeBrowser(browser);
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
   console.log('');

@@ -1,11 +1,13 @@
-// src/lighthouse.js — Programmatic Lighthouse audit runner
+// src/lighthouse.js — Programmatic Lighthouse audit runner (uses Playwright's Chromium)
 import fs from 'fs';
 import path from 'path';
 import lighthouse from 'lighthouse';
 import { launch } from 'chrome-launcher';
+import { chromium } from 'playwright';
 
 /**
  * Run a Lighthouse audit on a URL and extract key scores.
+ * Uses Playwright's bundled Chromium binary instead of system Chrome.
  *
  * @param {string} url - The URL to audit
  * @param {string} pageName - Slug name for the page
@@ -18,8 +20,9 @@ export async function runLighthouse(url, pageName, outputDir) {
 
   let chrome;
   try {
-    // Launch Chrome via chrome-launcher (Lighthouse's expected interface)
+    // Use Playwright's Chromium binary for Lighthouse
     chrome = await launch({
+      chromePath: chromium.executablePath(),
       chromeFlags: ['--headless', '--no-sandbox', '--disable-gpu'],
     });
 
@@ -46,11 +49,15 @@ export async function runLighthouse(url, pageName, outputDir) {
       `[lighthouse] ${pageName}: Performance=${scores.performance}, Accessibility=${scores.accessibility}, SEO=${scores.seo}`
     );
 
-    try { await chrome.kill(); } catch { /* ignore cleanup errors on Windows */ }
+    try { await chrome.kill(); } catch (e) {
+      console.warn(`[lighthouse] Chrome cleanup warning: ${e.message}`);
+    }
     return scores;
   } catch (error) {
     console.error(`[lighthouse] Error auditing ${pageName}: ${error.message}`);
-    try { if (chrome) await chrome.kill(); } catch { /* ignore */ }
+    try { if (chrome) await chrome.kill(); } catch (e) {
+      console.warn(`[lighthouse] Chrome cleanup warning: ${e.message}`);
+    }
     return null;
   }
 }

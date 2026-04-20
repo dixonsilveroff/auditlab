@@ -2,6 +2,10 @@
 import fs from 'fs';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+const VALID_SEVERITIES = ['High', 'Medium', 'Low'];
+
+let _model = null;
+
 const VISION_PROMPT = `You are a senior UI/UX auditor. Analyze this website screenshot and identify issues.
 
 For each issue found, return a JSON array of objects with these fields:
@@ -38,22 +42,29 @@ export async function analyzeScreenshot(imagePath) {
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
-    const model = genAI.getGenerativeModel({ model: modelName });
+    if (!_model) {
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+      _model = genAI.getGenerativeModel({ model: modelName });
+    }
 
     const imageData = fs.readFileSync(imagePath);
     const base64Image = imageData.toString('base64');
     const mimeType = 'image/png';
 
-    const result = await model.generateContent([
-      VISION_PROMPT,
-      {
-        inlineData: {
-          data: base64Image,
-          mimeType,
+    const result = await Promise.race([
+      _model.generateContent([
+        VISION_PROMPT,
+        {
+          inlineData: {
+            data: base64Image,
+            mimeType,
+          },
         },
-      },
+      ]),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Vision API timeout (60s)')), 60000)
+      ),
     ]);
 
     const response = result.response;
@@ -67,8 +78,23 @@ export async function analyzeScreenshot(imagePath) {
     }
 
     const issues = JSON.parse(jsonMatch[0]);
-    console.log(`[vision] Found ${issues.length} issues in ${imagePath}`);
-    return issues;
+
+    // Validate each issue object
+    const validated = issues.filter((i) => {
+      if (typeof i.issue !== 'string' || !i.issue.trim()) return false;
+      if (typeof i.recommendation !== 'string' || !i.recommendation.trim()) return false;
+      if (!VALID_SEVERITIES.includes(i.severity)) {
+        if (typeof i.severity === 'string') {
+          i.severity = 'Medium'; // fallback for unexpected severity values
+        } else {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    console.log(`[vision] Found ${validated.length} issues in ${imagePath}`);
+    return validated;
   } catch (error) {
     console.error(`[vision] Error analyzing ${imagePath}: ${error.message}`);
     return [];

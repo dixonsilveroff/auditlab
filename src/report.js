@@ -35,7 +35,6 @@ function scoreIndicator(score) {
  * @param {string} rootUrl - The root URL
  * @param {Array<{name: string, url: string}>} pages - Audited pages
  * @param {Object} lighthouseResults - Map of pageName -> scores
- * @param {Object} screenshotPaths - Map of pageName -> { desktop, mobile }
  * @param {Array} issues - Aggregated issues
  * @param {string} outputDir - Base output directory
  * @returns {string} Path to the generated report
@@ -45,7 +44,6 @@ export function generateReport(
   rootUrl,
   pages,
   lighthouseResults,
-  screenshotPaths,
   issues,
   outputDir
 ) {

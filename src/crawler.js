@@ -1,5 +1,4 @@
 // src/crawler.js — Page detection: homepage, service, contact
-import { chromium } from 'playwright';
 
 /**
  * Discover key pages from a root URL.
@@ -8,15 +7,19 @@ import { chromium } from 'playwright';
  *
  * @param {string} rootUrl - The website root URL
  * @param {number} maxPages - Maximum number of pages to return (default: 3)
+ * @param {import('playwright').Browser} [browser] - Optional existing browser to reuse
  * @returns {Promise<string[]>} Array of discovered page URLs
  */
-export async function discoverPages(rootUrl, maxPages = 3) {
+export async function discoverPages(rootUrl, maxPages = 3, browser = null) {
   const base = new URL(rootUrl);
   const origin = base.origin;
 
-  let browser;
+  const ownBrowser = !browser;
   try {
-    browser = await chromium.launch({ headless: true });
+    if (!browser) {
+      const { chromium } = await import('playwright');
+      browser = await chromium.launch({ headless: true });
+    }
     const context = await browser.newContext({
       userAgent:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -46,8 +49,8 @@ export async function discoverPages(rootUrl, maxPages = 3) {
       return [...new Set(hrefs)];
     }, origin);
 
-    await browser.close();
-    browser = null;
+    await context.close();
+    if (ownBrowser) await browser.close();
 
     // Always include the homepage
     const pages = [rootUrl];
@@ -79,7 +82,7 @@ export async function discoverPages(rootUrl, maxPages = 3) {
     return pages.slice(0, maxPages);
   } catch (error) {
     console.error(`[crawler] Error discovering pages: ${error.message}`);
-    if (browser) await browser.close();
+    if (ownBrowser && browser) await browser.close();
     return [rootUrl]; // Fallback to just the homepage
   }
 }

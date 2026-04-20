@@ -18,8 +18,6 @@ function buildHtml(markdownContent) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AuditLab Report</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
     :root {
       --bg: #ffffff;
       --text: #1a1a2e;
@@ -37,7 +35,7 @@ function buildHtml(markdownContent) {
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       color: var(--text);
       background: var(--bg);
       line-height: 1.7;
@@ -161,19 +159,24 @@ function buildHtml(markdownContent) {
  * Generate a PDF from the markdown report file.
  *
  * @param {string} markdownPath - Path to the report.md file
+ * @param {import('playwright').Browser} [browser] - Optional existing browser to reuse
  * @returns {Promise<string>} Path to the generated PDF
  */
-export async function generatePdf(markdownPath) {
+export async function generatePdf(markdownPath, browser = null) {
   const markdownContent = fs.readFileSync(markdownPath, 'utf-8');
   const html = buildHtml(markdownContent);
 
   const pdfPath = markdownPath.replace(/\.md$/, '.pdf');
 
   // Use Playwright to render to PDF
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
+  const ownBrowser = !browser;
+  if (!browser) {
+    browser = await chromium.launch({ headless: true });
+  }
+  const context = await browser.newContext();
+  const page = await context.newPage();
 
-  await page.setContent(html, { waitUntil: 'networkidle' });
+  await page.setContent(html, { waitUntil: 'load' });
 
   await page.pdf({
     path: pdfPath,
@@ -187,7 +190,8 @@ export async function generatePdf(markdownPath) {
     },
   });
 
-  await browser.close();
+  await context.close();
+  if (ownBrowser) await browser.close();
 
   console.log(`[report] PDF saved to ${pdfPath}`);
   return pdfPath;
