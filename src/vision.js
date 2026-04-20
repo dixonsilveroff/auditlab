@@ -63,7 +63,7 @@ export async function analyzeScreenshot(imagePath) {
   try {
     if (!_model) {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+      const modelName = process.env.GEMINI_MODEL;
       _model = genAI.getGenerativeModel({ model: modelName });
     }
 
@@ -82,7 +82,7 @@ export async function analyzeScreenshot(imagePath) {
         },
       ]),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Vision API timeout (60s)')), 60000)
+        setTimeout(() => reject(new Error('Vision API timeout (75s)')), 75000)
       ),
     ]);
 
