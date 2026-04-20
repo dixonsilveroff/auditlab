@@ -49,15 +49,13 @@ export async function runLighthouse(url, pageName, outputDir) {
       `[lighthouse] ${pageName}: Performance=${scores.performance}, Accessibility=${scores.accessibility}, SEO=${scores.seo}`
     );
 
-    try { await chrome.kill(); } catch (e) {
-      console.warn(`[lighthouse] Chrome cleanup warning: ${e.message}`);
-    }
+    // Brief delay to let Chrome release file handles on Windows
+    await new Promise((r) => setTimeout(r, 500));
+    try { await chrome.kill(); } catch { /* temp dir cleanup may fail on Windows — safe to ignore */ }
     return scores;
   } catch (error) {
     console.error(`[lighthouse] Error auditing ${pageName}: ${error.message}`);
-    try { if (chrome) await chrome.kill(); } catch (e) {
-      console.warn(`[lighthouse] Chrome cleanup warning: ${e.message}`);
-    }
+    try { if (chrome) { await new Promise((r) => setTimeout(r, 500)); await chrome.kill(); } } catch { /* ignore */ }
     return null;
   }
 }
