@@ -41,7 +41,9 @@ export async function captureScreenshots(browser, url, pageName, outputDir) {
         });
         const page = await context.newPage();
 
-        await page.goto(url, { waitUntil: 'networkidle', timeout: TIMEOUT });
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
+        // Allow extra time for lazy-loaded images and layout shifts to settle
+        await page.waitForTimeout(5000);
         await page.screenshot({ path: filepath, fullPage: true });
         await context.close();
 
