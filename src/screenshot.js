@@ -11,6 +11,34 @@ const TIMEOUT = 30000;
 const MAX_RETRIES = 1;
 
 /**
+ * Scroll from top to bottom of the page incrementally.
+ * Triggers lazy-loaded content (IntersectionObserver, scroll-event listeners, etc.)
+ *
+ * @param {import('playwright').Page} page
+ */
+async function autoScrollPage(page) {
+  await page.evaluate(async () => {
+    await new Promise((resolve) => {
+      const scrollStep = Math.max(window.innerHeight * 0.8, 400);
+      const scrollDelay = 300;
+      let currentPosition = 0;
+
+      const timer = setInterval(() => {
+        const scrollHeight = document.body.scrollHeight;
+        if (currentPosition >= scrollHeight) {
+          clearInterval(timer);
+          window.scrollTo(0, 0); // scroll back to top
+          resolve();
+          return;
+        }
+        currentPosition += scrollStep;
+        window.scrollTo(0, currentPosition);
+      }, scrollDelay);
+    });
+  });
+}
+
+/**
  * Capture full-page screenshots of a URL at desktop and mobile viewports.
  *
  * @param {import('playwright').Browser} browser - The Playwright browser instance
@@ -42,8 +70,10 @@ export async function captureScreenshots(browser, url, pageName, outputDir) {
         const page = await context.newPage();
 
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: TIMEOUT });
-        // Allow extra time for lazy-loaded images and layout shifts to settle
-        await page.waitForTimeout(5000);
+        // Scroll through the page to trigger lazy-loaded content
+        await autoScrollPage(page);
+        // Allow extra time for final images and layout shifts to settle
+        await page.waitForTimeout(2000);
         await page.screenshot({ path: filepath, fullPage: true });
         await context.close();
 

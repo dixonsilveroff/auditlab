@@ -19,7 +19,7 @@ STEP 2 — AUDIT:
 Identify issues in TWO categories:
 
 A) UX Issues (tag category as "ux"):
-1. Layout issues (broken layouts, overlapping elements, excessive whitespace)
+1. Layout issues (broken layouts, overlapping elements, excessive whitespace BETWEEN content sections — do NOT flag large empty areas at the very bottom of a page, as those are typically caused by lazy-loaded or scroll-triggered content that has not rendered in the screenshot)
 2. Readability problems (poor contrast, tiny text, missing hierarchy)
 3. CTA issues (missing calls-to-action, unclear buttons, poor placement)
 4. Mobile responsiveness issues (if applicable)
