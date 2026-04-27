@@ -1,11 +1,11 @@
 // src/vision.js — AI vision analysis of screenshots using Google Gemini
 import fs from 'fs';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 const VALID_SEVERITIES = ['High', 'Medium', 'Low'];
 const VALID_CATEGORIES = ['ux', 'branding'];
 
-let _model = null;
+let _client = null;
 
 const VISION_PROMPT = `You are a senior UI/UX and brand strategy auditor. Analyze this website screenshot.
 
@@ -53,41 +53,49 @@ If there are no issues, return an empty array: []`;
  * @returns {Promise<Array<{issue: string, severity: string, recommendation: string}>>}
  */
 export async function analyzeScreenshot(imagePath) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const projectId = process.env.VERTEX_PROJECT_ID;
+  const location = process.env.VERTEX_LOCATION;
 
-  if (!apiKey) {
-    console.warn('[vision] No GEMINI_API_KEY set — skipping vision analysis');
+  if (!projectId || !location) {
+    console.warn('[vision] No VERTEX_PROJECT_ID or VERTEX_LOCATION set — skipping vision analysis');
     return [];
   }
 
   try {
-    if (!_model) {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const modelName = process.env.GEMINI_MODEL;
-      _model = genAI.getGenerativeModel({ model: modelName });
+    if (!_client) {
+      _client = new GoogleGenAI({
+        vertexai: {
+          project: projectId,
+          location: location,
+        }
+      });
     }
 
     const imageData = fs.readFileSync(imagePath);
     const base64Image = imageData.toString('base64');
     const mimeType = 'image/png';
 
-    const result = await Promise.race([
-      _model.generateContent([
-        VISION_PROMPT,
-        {
-          inlineData: {
-            data: base64Image,
-            mimeType,
+    const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+
+    const response = await Promise.race([
+      _client.models.generateContent({
+        model: modelName,
+        contents: [
+          VISION_PROMPT,
+          {
+            inlineData: {
+              data: base64Image,
+              mimeType,
+            },
           },
-        },
-      ]),
+        ]
+      }),
       new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Vision API timeout (75s)')), 75000)
       ),
     ]);
 
-    const response = result.response;
-    const text = response.text();
+    const text = response.text;
 
     // Extract JSON from the response (handle potential markdown wrapping)
     const jsonMatch = text.match(/\[[\s\S]*\]/);
