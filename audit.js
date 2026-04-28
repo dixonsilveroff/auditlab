@@ -38,7 +38,7 @@ const argv = yargs(hideBin(process.argv))
   })
   .help()
   .alias('help', 'h')
-  .version('1.0.0')
+  .version('1.1.0')
   .parse();
 
 // ── Main Pipeline ────────────────────────────────────────
@@ -57,7 +57,7 @@ async function main() {
 
   console.log('');
   console.log('╔══════════════════════════════════════════════════╗');
-  console.log('║              🔍 AuditLab v1.0.0                 ║');
+  console.log('║              🔍 AuditLab v1.1.0                 ║');
   console.log('╚══════════════════════════════════════════════════╝');
   console.log('');
   console.log(`  Target:  ${url}`);

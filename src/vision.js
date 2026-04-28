@@ -64,10 +64,9 @@ export async function analyzeScreenshot(imagePath) {
   try {
     if (!_client) {
       _client = new GoogleGenAI({
-        vertexai: {
-          project: projectId,
-          location: location,
-        }
+        vertexai: true,
+        project: projectId,
+        location: location,
       });
     }
 
