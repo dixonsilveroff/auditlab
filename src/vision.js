@@ -90,7 +90,7 @@ export async function analyzeScreenshot(imagePath) {
         ]
       }),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Vision API timeout (75s)')), 75000)
+        setTimeout(() => reject(new Error('Vision API timeout (150s)')), 150000)
       ),
     ]);
 
